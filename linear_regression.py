@@ -20,8 +20,7 @@ r_sq = model.score(x, y)
 print('coefficient of determination:', r_sq)
 
 y_new = model.predict(x)
-print(np.square(np.subtract(y_new,y)).mean())
-#print(model.)
+
 plt.suptitle('Original vs New curve')
 plt.plot(x, y, label = 'Original Data')
 plt.plot(x, y_new, label = 'Corrected Data')
