@@ -34,32 +34,32 @@ x_con = np.concatenate((x_a, x_b, x_c, x_d))
 y_con = np.concatenate((y_a, y_b, y_c, y_d))
 
 #finding the region with least R^2 error
-model = LinearRegression()
+
 r_sq = []
-intercept = []
 for i in range(0,len(input_parts)):
+    model = LinearRegression()
     model.fit(input_parts[i], output_parts[i])
     model = LinearRegression().fit(input_parts[i], output_parts[i])
     error = model.score(input_parts[i], output_parts[i])
     print("r_sq = ", error)
     r_sq.append(error)
-    intercept.append(model.intercept_)
-    print('intercept:', model.intercept_)
 
 maxi = max(r_sq)
 index = r_sq.index(maxi)
 print("max = ", maxi, " index = ", index)
 
+model = LinearRegression()
 model = LinearRegression().fit(input_parts[index], output_parts[index])
 output_parts[index] = model.predict(input_parts[index])
 
 x_mean = np.mean(input[index])
 y_mean = np.mean(output_parts[index])
-  
-Sxy = np.sum(x*y)- n*x_mean*y_mean
-Sxx = np.sum(x*x)-n*x_mean*x_mean
 
-line_slope = Sxy/Sxx  # Sxy = sample covariance and Sxx = sample variance
+# Sxy = sample covariance and Sxx = sample variance
+Sxy = np.sum(input[index]*output_parts[index])- n*x_mean*y_mean
+Sxx = np.sum(input[index]*input[index])-n*x_mean*x_mean
+
+line_slope = Sxy/Sxx
 line_intercept = y_mean - line_slope*x_mean
 
 print("slope = ", line_slope, " intercept = ", line_intercept)
