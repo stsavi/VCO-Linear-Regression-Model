@@ -1,28 +1,73 @@
+from matplotlib import pyplot as plt
 import pandas as pd
 import numpy as np
 from sklearn.linear_model import LinearRegression
-import matplotlib.pyplot as plt
-from sklearn.metrics import mean_squared_error
+from scipy.interpolate import interp1d
+import os
 
+#import file
+dirname = os.path.dirname(__file__)
+filename = os.path.join(dirname, 'V_F.xlsx')
+file = pd.read_excel(filename)
 
-file = pd.read_excel("C:\\Users\\Satyam\\Desktop\\VSC\\capstone\\V_F.xlsx")
+x_data = pd.array(file.iloc[:,0])#.reshape(-1, 1)
+x = x_data.to_numpy()
+y_data = pd.array(file.iloc[:,1])
+y = y_data.to_numpy()
+n = y.size   #no. of rows
 
-x = pd.array(file.iloc[:,0]).reshape(-1, 1)
-y = pd.array(file.iloc[:,1])
+# divide the data in 4 parts
+x_a = x[:n//4]
+y_a = y[:n//4]
+x_b = x[n//4:2*(n//4)]
+y_b = y[n//4:2*(n//4)]
+x_c = x[2*(n//4):3*(n//4)]
+y_c = y[2*(n//4):3*(n//4)]
+x_d = x[3*(n//4):]
+y_d = y[3*(n//4):]
 
+input = [x_a, x_b, x_c, x_d]
+input_parts = [x_a.reshape(-1, 1), x_b.reshape(-1, 1), x_c.reshape(-1, 1), x_d.reshape(-1, 1)]
+output_parts = [y_a, y_b, y_c, y_d]
+
+x_con = np.concatenate((x_a, x_b, x_c, x_d))
+y_con = np.concatenate((y_a, y_b, y_c, y_d))
+
+#finding the region with least R^2 error
 model = LinearRegression()
+r_sq = []
+intercept = []
+for i in range(0,len(input_parts)):
+    model.fit(input_parts[i], output_parts[i])
+    model = LinearRegression().fit(input_parts[i], output_parts[i])
+    error = model.score(input_parts[i], output_parts[i])
+    print("r_sq = ", error)
+    r_sq.append(error)
+    intercept.append(model.intercept_)
+    print('intercept:', model.intercept_)
 
-model.fit(x, y)
+maxi = max(r_sq)
+index = r_sq.index(maxi)
+print("max = ", maxi, " index = ", index)
 
-model = LinearRegression().fit(x, y)
+model = LinearRegression().fit(input_parts[index], output_parts[index])
+output_parts[index] = model.predict(input_parts[index])
 
-r_sq = model.score(x, y)
-print('coefficient of determination:', r_sq)
+#predicted values
+for i in range(0, len(output_parts)):
+    if(i == index):
+        continue
+    output_parts[i] = input[i]*model.intercept_
 
-y_new = model.predict(x)
+y_new = np.concatenate((output_parts[0], output_parts[1], output_parts[2], output_parts[3]))  
 
-plt.suptitle('Original vs New curve')
-plt.plot(x, y, label = 'Original Data')
-plt.plot(x, y_new, label = 'Corrected Data')
-plt.legend()
+# make noisy data from theoretical data
+#y_n = y_new + np.random.normal(0, 0.27, len(x_con))
+
+# plot data
+#plt.plot(x_con, y_n,"r", label = "noisy data")
+
+plt.plot(x_con, y_con, label="original data")
+plt.plot(x_con, y_new, color='yellow', linestyle='dashed', label = "linear data")
+plt.legend(loc=0)
 plt.show()
