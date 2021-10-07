@@ -10,7 +10,7 @@ dirname = os.path.dirname(__file__)
 filename = os.path.join(dirname, 'V_F.xlsx')
 file = pd.read_excel(filename)
 
-x_data = pd.array(file.iloc[:,0])
+x_data = pd.array(file.iloc[:,0])#.reshape(-1, 1)
 x = x_data.to_numpy()
 y_data = pd.array(file.iloc[:,1])
 y = y_data.to_numpy()
@@ -53,11 +53,22 @@ print("max = ", maxi, " index = ", index)
 model = LinearRegression().fit(input_parts[index], output_parts[index])
 output_parts[index] = model.predict(input_parts[index])
 
+x_mean = np.mean(input[index])
+y_mean = np.mean(output_parts[index])
+  
+Sxy = np.sum(x*y)- n*x_mean*y_mean
+Sxx = np.sum(x*x)-n*x_mean*x_mean
+
+line_slope = Sxy/Sxx  # Sxy = sample covariance and Sxx = sample variance
+line_intercept = y_mean - line_slope*x_mean
+
+print("slope = ", line_slope, " intercept = ", line_intercept)
+
 #predicted values
 for i in range(0, len(output_parts)):
     if(i == index):
         continue
-    output_parts[i] = input[i]*model.intercept_
+    output_parts[i] = (line_slope * input[i]) + line_intercept
 
 y_new = np.concatenate((output_parts[0], output_parts[1], output_parts[2], output_parts[3]))  
 
