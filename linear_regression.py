@@ -1,20 +1,25 @@
 from matplotlib import pyplot as plt
 import pandas as pd
 import numpy as np
-from sklearn.linear_model import LinearRegression
-from scipy.interpolate import interp1d
+from sympy import * 
 import os
+
 
 #import file
 dirname = os.path.dirname(__file__)
 filename = os.path.join(dirname, 'V_F.xlsx')
-file = pd.read_excel(filename)
+file = pd.read_excel(filename)   #read the file for importing data
 
-x_data = pd.array(file.iloc[:,0])#.reshape(-1, 1)
+x_data = pd.array(file.iloc[:,0])
 x = x_data.to_numpy()
 y_data = pd.array(file.iloc[:,1])
-y = y_data.to_numpy()
-n = y.size   #no. of rows
+n = x.size
+
+#finding the closest quadratic curve for given data
+curve = np.polyfit(x_data, y_data, 2)   #using polyfit to find the most desirable curve
+poly = np.poly1d(curve)    #generate the function using the found coefficients
+
+y = poly(x_data)   #updated data of y
 
 # divide the data in 4 parts
 x_a = x[:n//4]
@@ -26,59 +31,54 @@ y_c = y[2*(n//4):3*(n//4)]
 x_d = x[3*(n//4):]
 y_d = y[3*(n//4):]
 
-input = [x_a, x_b, x_c, x_d]
-input_parts = [x_a.reshape(-1, 1), x_b.reshape(-1, 1), x_c.reshape(-1, 1), x_d.reshape(-1, 1)]
-output_parts = [y_a, y_b, y_c, y_d]
+input_parts = [x_a, x_b, x_c, x_d]   #array of parts of input data
+output_parts = [y_a, y_b, y_c, y_d]  #array of parts of output data
 
-x_con = np.concatenate((x_a, x_b, x_c, x_d))
-y_con = np.concatenate((y_a, y_b, y_c, y_d))
+x_con = np.concatenate((x_a, x_b, x_c, x_d))  #combined data of x
+y_con = np.concatenate((y_a, y_b, y_c, y_d))  #combined data of y
 
-#finding the region with least R^2 error
+#calculate the second derivative of the parts of curve
+second_der = []
+for i in range(0, len(input_parts)):
+    x1 = symbols('x1')
+    
+    part_polyfit = np.polyfit(input_parts[i], output_parts[i], 2)   #use polyfit to find the most suitable curve
+    new_curve = np.poly1d(part_polyfit)
+    new_y = new_curve(input_parts[i])
 
-r_sq = []
-for i in range(0,len(input_parts)):
-    model = LinearRegression()
-    model.fit(input_parts[i], output_parts[i])
-    model = LinearRegression().fit(input_parts[i], output_parts[i])
-    error = model.score(input_parts[i], output_parts[i])
-    print("r_sq = ", error)
-    r_sq.append(error)
+    expr = part_polyfit[0]*x1**2 + part_polyfit[1]*x1 + part_polyfit[2]
 
-maxi = max(r_sq)
-index = r_sq.index(maxi)
-print("max = ", maxi, " index = ", index)
+    dydx = Derivative(expr, x1).doit()   #first derivative 
+    d2yd2x = Derivative(dydx).doit()   #second derivative
 
-model = LinearRegression()
-model = LinearRegression().fit(input_parts[index], output_parts[index])
-output_parts[index] = model.predict(input_parts[index])
+    second_der.append(abs(d2yd2x-0))
+    print("second derivative of part", i+1, second_der[i])
 
-x_mean = np.mean(input[index])
+mini = min(second_der)
+index = second_der.index(mini)
+print("min = ", mini, ", index = ", index)
+
+#calculate slope and intercept of the linear region
+x_mean = np.mean(input_parts[index])
 y_mean = np.mean(output_parts[index])
+n = np.size(input_parts[index])
 
-# Sxy = sample covariance and Sxx = sample variance
-Sxy = np.sum(input[index]*output_parts[index])- n*x_mean*y_mean
-Sxx = np.sum(input[index]*input[index])-n*x_mean*x_mean
+Sxy = np.sum(input_parts[index]*output_parts[index])- n*x_mean*y_mean   #sample covariance
+Sxx = np.sum(input_parts[index]*input_parts[index])-n*x_mean*x_mean   #sample variance
+  
+slope = Sxy/Sxx
+intercept = y_mean-slope*x_mean
+print("slope =", slope, ", intercept =", intercept)
 
-line_slope = Sxy/Sxx
-line_intercept = y_mean - line_slope*x_mean
+#updating the values as per the calculated slope and intercept
+for i in range(0, len(input_parts)):
+    output_parts[i] = slope*input_parts[i] + intercept   #y = mx + c
 
-print("slope = ", line_slope, " intercept = ", line_intercept)
+#concatenated all the parts of curve
+output = np.concatenate((output_parts[0], output_parts[1], output_parts[2], output_parts[3]))
 
-#predicted values
-for i in range(0, len(output_parts)):
-    if(i == index):
-        continue
-    output_parts[i] = (line_slope * input[i]) + line_intercept
-
-y_new = np.concatenate((output_parts[0], output_parts[1], output_parts[2], output_parts[3]))  
-
-# make noisy data from theoretical data
-#y_n = y_new + np.random.normal(0, 0.27, len(x_con))
-
-# plot data
-#plt.plot(x_con, y_n,"r", label = "noisy data")
-
-plt.plot(x_con, y_con, label="original data")
-plt.plot(x_con, y_new, color='yellow', linestyle='dashed', label = "linear data")
-plt.legend(loc=0)
+#plot the comparision of original and corrected data
+plt.plot(x_con, y_con, label="Original data")
+plt.plot(x_con, output, label="Corrected data")
+plt.legend()
 plt.show()
