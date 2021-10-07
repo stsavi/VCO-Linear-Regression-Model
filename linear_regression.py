@@ -10,7 +10,7 @@ dirname = os.path.dirname(__file__)
 filename = os.path.join(dirname, 'V_F.xlsx')
 file = pd.read_excel(filename)
 
-x_data = pd.array(file.iloc[:,0])#.reshape(-1, 1)
+x_data = pd.array(file.iloc[:,0])
 x = x_data.to_numpy()
 y_data = pd.array(file.iloc[:,1])
 y = y_data.to_numpy()
