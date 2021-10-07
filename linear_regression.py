@@ -54,6 +54,7 @@ for i in range(0, len(input_parts)):
     second_der.append(abs(d2yd2x-0))
     print("second derivative of part", i+1, second_der[i])
 
+#find the second derivative closest to zero
 mini = min(second_der)
 index = second_der.index(mini)
 print("min = ", mini, ", index = ", index)
